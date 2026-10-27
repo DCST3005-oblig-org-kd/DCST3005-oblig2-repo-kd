@@ -1,31 +1,19 @@
 # Service-stacken: én definisjon, rullet ut som én instans per tjeneste
 # (ordre, meny) -- se config/<miljo>/service-ordre.tfvars og service-meny.tfvars.
 #
-# Bygges opp i flere PR-er under migreringen:
+# Bygd opp gjennom migreringen:
 #   PR 1: storage account + Key Vault, flyttet fra data-stacken
-#   PR 2 (denne): kjøremiljø (VM eller web app), flyttet fra app-stacken
-#   PR 4: subnett + NSG, flyttet fra network-stacken, og bytte til å lese
-#         ressursgruppe/VNet fra shared-network i stedet for network.
+#   PR 2: kjøremiljø (VM eller web app), flyttet fra app-stacken
+#   PR 3 (denne): subnett + NSG, flyttet fra network-stacken. Ressursgruppe
+#         og VNet bygges nå etter samme navnemønster som shared-network
+#         bruker, i stedet for det lokale network-mønsteret.
 
 data "azurerm_client_config" "current" {}
 
-# Subnettet ligger fortsatt i network-stacken til PR 4.
-data "terraform_remote_state" "network" {
-  backend = "azurerm"
-  config = {
-    resource_group_name  = var.state_resource_group_name
-    storage_account_name = var.state_storage_account_name
-    container_name       = var.state_container_name
-    key                  = "oblig2/${var.miljo}/network.tfstate"
-    use_azuread_auth     = true
-  }
-}
-
 locals {
-  # Samme navnemønster som network-stacken bruker i dag. Byttes til å lese
-  # fra shared-network sine outputs i PR 4, når RG+VNet har flyttet dit.
+  # Samme navnemønster som shared-network-stacken bruker.
   resource_group_name = "rg-${var.kortnavn}-oblig2-${var.miljo}"
-  subnet_id           = data.terraform_remote_state.network.outputs.subnet_ids[var.tjeneste]
+  vnet_name           = "vnet-${var.kortnavn}-${var.miljo}"
 
   tags = {
     eier     = var.kortnavn
@@ -58,6 +46,19 @@ module "keyvault" {
   tags                = local.tags
 }
 
+module "subnet" {
+  source = "../../modules/subnet"
+
+  service             = var.tjeneste
+  resource_group_name = local.resource_group_name
+  location            = var.location
+  vnet_name           = local.vnet_name
+  prefix              = var.subnet_prefix
+  delegate_web        = var.runtime == "webapp"
+  allow_http_from     = var.allow_http_from
+  tags                = local.tags
+}
+
 module "vm" {
   source = "../../modules/vm"
   count  = var.runtime == "vm" ? 1 : 0
@@ -65,7 +66,7 @@ module "vm" {
   service             = var.tjeneste
   resource_group_name = local.resource_group_name
   location            = var.location
-  subnet_id           = local.subnet_id
+  subnet_id           = module.subnet.subnet_id
   size                = var.vm_size
   ssh_public_key      = var.ssh_public_key
   tags                = local.tags
@@ -80,7 +81,7 @@ module "webapp" {
   miljo               = var.miljo
   resource_group_name = local.resource_group_name
   location            = var.location
-  subnet_id           = local.subnet_id
+  subnet_id           = module.subnet.subnet_id
   sku                 = var.webapp_sku
   tags                = local.tags
 }
