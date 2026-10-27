@@ -1,1 +1,2 @@
 tjeneste = "meny"
+runtime  = "webapp"
