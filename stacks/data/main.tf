@@ -1,50 +1,22 @@
-# Datalaget for ALLE tjenestene: én storage account og ett Key Vault per
-# tjeneste. Ressursgruppa eies av network-stacken.
+# Datalaget for ALLE tjenestene. Storage account og Key Vault er flyttet til
+# service-stacken (migrerings-PR 1). Disse removed-blokkene slipper dem ut av
+# denne staten uten å røre dem i Azure -- se import-fra-data.tf i
+# stacks/service/.
+#
+# FJERNES når K8-opprydding er gjort i begge miljøer.
 
-data "azurerm_client_config" "current" {}
+removed {
+  from = module.storage
 
-data "terraform_remote_state" "network" {
-  backend = "azurerm"
-  config = {
-    resource_group_name  = var.state_resource_group_name
-    storage_account_name = var.state_storage_account_name
-    container_name       = var.state_container_name
-    key                  = "oblig2/${var.miljo}/network.tfstate"
-    use_azuread_auth     = true
+  lifecycle {
+    destroy = false
   }
 }
 
-locals {
-  network = data.terraform_remote_state.network.outputs
+removed {
+  from = module.keyvault
 
-  tags = {
-    eier  = var.kortnavn
-    miljo = var.miljo
-    kurs  = "dcst3005-oblig2"
+  lifecycle {
+    destroy = false
   }
-}
-
-module "storage" {
-  source   = "../../modules/storage"
-  for_each = var.tjenester
-
-  service             = each.key
-  kortnavn            = var.kortnavn
-  miljo               = var.miljo
-  resource_group_name = local.network.resource_group_name
-  location            = var.location
-  tags                = local.tags
-}
-
-module "keyvault" {
-  source   = "../../modules/keyvault"
-  for_each = var.tjenester
-
-  service             = each.key
-  kortnavn            = var.kortnavn
-  miljo               = var.miljo
-  resource_group_name = local.network.resource_group_name
-  location            = var.location
-  tenant_id           = data.azurerm_client_config.current.tenant_id
-  tags                = local.tags
 }

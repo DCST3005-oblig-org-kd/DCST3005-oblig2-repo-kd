@@ -1,9 +1,3 @@
-output "storage_account_names" {
-  description = "Storage account per tjeneste."
-  value       = { for navn, s in module.storage : navn => s.name }
-}
-
-output "key_vault_names" {
-  description = "Key Vault per tjeneste."
-  value       = { for navn, k in module.keyvault : navn => k.name }
-}
+# Ingen outputs igjen -- storage account og Key Vault er flyttet til
+# service-stacken. Denne fila fjernes helt sammen med resten av data-stacken
+# i K8-opprydding.
