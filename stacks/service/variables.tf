@@ -23,21 +23,6 @@ variable "miljo" {
   }
 }
 
-variable "state_resource_group_name" {
-  description = "Ressursgruppa til state-kontoen. Settes av scripts/kjor.sh fra shared/backend.hcl."
-  type        = string
-}
-
-variable "state_storage_account_name" {
-  description = "State-kontoen. Settes av scripts/kjor.sh fra shared/backend.hcl."
-  type        = string
-}
-
-variable "state_container_name" {
-  description = "Containeren state ligger i. Settes av scripts/kjor.sh fra shared/backend.hcl."
-  type        = string
-}
-
 variable "tjeneste" {
   description = "Hvilken tjeneste denne instansen av service-stacken er for: ordre eller meny."
   type        = string
@@ -74,4 +59,15 @@ variable "webapp_sku" {
   description = "SKU for App Service-planen, kun brukt når runtime er webapp."
   type        = string
   default     = "B1"
+}
+
+variable "subnet_prefix" {
+  description = "Adresseområdet til denne tjenestens subnett, f.eks. 10.10.0.0/24. Flyttet fra network.tfvars."
+  type        = string
+}
+
+variable "allow_http_from" {
+  description = "Hvem som får nå tjenesten på port 80."
+  type        = string
+  default     = "Internet"
 }
