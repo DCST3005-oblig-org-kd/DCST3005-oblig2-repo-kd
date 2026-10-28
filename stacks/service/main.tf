@@ -85,3 +85,22 @@ module "webapp" {
   sku                 = var.webapp_sku
   tags                = local.tags
 }
+
+# EO 1: ordre skal godta TCP 8446 fra 172.16.16.0/24. Gjelder bare ordre.
+resource "azurerm_network_security_rule" "eo1_8446" {
+  count = var.tjeneste == "ordre" ? 1 : 0
+
+  name                        = "eo1-allow-8446"
+  resource_group_name         = local.resource_group_name
+  network_security_group_name = "nsg-${var.tjeneste}"
+  priority                    = 110
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "8446"
+  source_address_prefix       = "172.16.16.0/24"
+  destination_address_prefix  = "*"
+
+  depends_on = [module.subnet]
+}
