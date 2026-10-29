@@ -24,12 +24,12 @@ variable "miljo" {
 }
 
 variable "tjeneste" {
-  description = "Hvilken tjeneste denne instansen av service-stacken er for: ordre eller meny."
+  description = "Hvilken tjeneste denne instansen av service-stacken er for. Et lavercase navn uten tall eller spesialtegn, f.eks. ordre, meny, sok."
   type        = string
 
   validation {
-    condition     = contains(["ordre", "meny"], var.tjeneste)
-    error_message = "tjeneste må være ordre eller meny."
+    condition     = can(regex("^[a-z]{2,15}$", var.tjeneste))
+    error_message = "tjeneste må være 2-15 små bokstaver, uten tall eller spesialtegn."
   }
 }
 
